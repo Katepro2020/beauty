@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор себестоимости процедуры</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #faf7f2;
+  --warm-white: #fffcf8;
+  --blush: #e8c4b0;
+  --rose: #c9826a;
+  --deep-rose: #a05a45;
+  --mocha: #6b4c3b;
+  --text: #2d1f18;
+  --text-muted: #9a7a6e;
+  --border: #e2d0c4;
+  --shadow: rgba(106, 71, 55, 0.10);
+  --input-bg: #fff9f5;
+  --card-radius: 16px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  min-height: 100vh;
+  color: var(--text);
+  padding: 0 0 80px;
+}
+
+/* ═══════════════════════════
+   HEADER
+═══════════════════════════ */
+.header {
+  text-align: center;
+  padding: 48px 20px 36px;
+  position: relative;
+}
+.header::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: var(--rose);
+  margin: 20px auto 0;
+  border-radius: 2px;
+}
+.header-eyebrow {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--rose);
+  margin-bottom: 10px;
+}
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(22px, 5vw, 36px);
+  font-weight: 600;
+  color: var(--mocha);
+  line-height: 1.25;
+}
+.header p {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text-muted);
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ═══════════════════════════
+   PAGE WRAPPER
+═══════════════════════════ */
+.page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ═══════════════════════════
+   CARD (outer shell)
+═══════════════════════════ */
+.card {
+  background: var(--warm-white);
+  border-radius: 20px;
+  box-shadow: 0 4px 48px var(--shadow), 0 0 0 1px var(--border);
+  overflow: hidden;
+}
+
+/* ═══════════════════════════
+   ── DESKTOP TABLE (≥ 640px)
+═══════════════════════════ */
+.desktop-view { display: block; }
+.mobile-list  { display: none; }
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+thead tr {
+  background: linear-gradient(120deg, var(--mocha) 0%, var(--deep-rose) 100%);
+}
+thead th {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.88);
+  padding: 16px 14px;
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+thead th.th-right { text-align: right; padding-right: 18px; }
+thead th.th-center { text-align: center; }
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fff5ef; }
+
+td {
+  padding: 9px 12px;
+  vertical-align: middle;
+}
+td.td-num  { width: 48px; }
+td.td-cost { text-align: right; padding-right: 18px; white-space: nowrap; }
+td.td-del  { width: 44px; text-align: center; }
+
+.row-num {
+  width: 26px; height: 26px;
+  background: var(--blush);
+  color: var(--mocha);
+  border-radius: 50%;
+  font-size: 11px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+  margin: 0 auto;
+}
+tbody tr:hover .row-num { background: var(--rose); color: #fff; }
+
+/* Inputs — shared */
+.inp {
+  width: 100%;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: var(--input-bg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  -webkit-appearance: none;
+}
+.inp::placeholder { color: #c4a99a; font-weight: 300; font-size: 13px; }
+.inp:focus {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 3px rgba(201,130,106,0.13);
+  background: #fff;
+}
+.inp[type=number] {
+  -moz-appearance: textfield;
+  text-align: right;
+}
+.inp[type=number]::-webkit-inner-spin-button,
+.inp[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.inp-name { min-width: 160px; }
+.inp-num  { max-width: 110px; }
+
+.cost-val        { font-size: 14px; font-weight: 500; color: var(--deep-rose); }
+.cost-val.empty  { color: var(--border); font-weight: 300; }
+
+/* Delete btn */
+.btn-del {
+  background: none; border: none; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #cdb8ae;
+  transition: background 0.14s, color 0.14s;
+  margin: 0 auto;
+}
+.btn-del:hover { background: #ffe8e0; color: #d9654a; }
+
+/* Add row / footer */
+tfoot tr td { padding: 0; border: none; }
+.btn-add {
+  width: 100%; background: none; border: none; cursor: pointer;
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  color: var(--rose); letter-spacing: 0.04em;
+  transition: background 0.14s, color 0.14s;
+}
+.btn-add:hover { background: #fff0ea; color: var(--deep-rose); }
+.btn-add svg { flex-shrink: 0; }
+
+/* ═══════════════════════════
+   ── MOBILE CARDS (< 640px)
+═══════════════════════════ */
+.mobile-list {
+  display: none;
+  padding: 12px 14px 0;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.m-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 14px 14px 12px;
+  position: relative;
+  transition: box-shadow 0.15s;
+}
+.m-card:focus-within {
+  box-shadow: 0 2px 16px rgba(201,130,106,0.13);
+  border-color: var(--blush);
+}
+
+.m-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.m-badge {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--rose);
+  background: #fff0ea;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.m-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.m-field { display: flex; flex-direction: column; gap: 4px; }
+.m-field.full { grid-column: 1 / -1; }
+.m-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.m-cost-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.m-cost-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+.m-cost-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Playfair Display', serif;
+  color: var(--deep-rose);
+}
+.m-cost-value.empty {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--border);
+}
+
+/* Mobile add btn */
+.m-add-wrap {
+  padding: 10px 14px 14px;
+}
+.btn-add-mobile {
+  width: 100%;
+  background: #fff0ea;
+  border: 1.5px dashed var(--blush);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+  padding: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  color: var(--rose);
+  transition: background 0.14s, border-color 0.14s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-add-mobile:active { background: #ffe0d4; }
+
+/* ═══════════════════════════
+   TOTAL BANNER
+═══════════════════════════ */
+.total-section {
+  background: linear-gradient(120deg, var(--mocha) 0%, var(--deep-rose) 100%);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.total-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.72);
+  font-weight: 400;
+  flex: 1;
+  min-width: 160px;
+}
+.total-right {
+  display: flex; align-items: baseline; gap: 5px;
+}
+.total-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 34px; font-weight: 600;
+  color: #fff;
+  line-height: 1;
+}
+.total-currency {
+  font-size: 15px;
+  color: rgba(255,255,255,0.65);
+  font-weight: 300;
+}
+
+@keyframes bump {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+.bump { animation: bump 0.28s ease; }
+
+/* ═══════════════════════════
+   HINT
+═══════════════════════════ */
+.hint {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 300;
+  font-style: italic;
+}
+
+/* ═══════════════════════════
+   EMPTY STATE (table)
+═══════════════════════════ */
+.empty-msg td {
+  text-align: center;
+  padding: 36px 20px;
+  color: #c4a99a;
+  font-size: 14px;
+  font-weight: 300;
+}
+
+/* ═══════════════════════════
+   BREAKPOINT: mobile
+═══════════════════════════ */
+@media (max-width: 639px) {
+  body { padding-bottom: 60px; }
+  .header { padding: 36px 20px 28px; }
+
+  .desktop-view { display: none !important; }
+  .mobile-list  { display: flex; }
+
+  .card { border-radius: 16px; }
+
+  .total-section { padding: 18px 18px; }
+  .total-value { font-size: 28px; }
+  .total-label { font-size: 10px; min-width: 120px; }
+}
+
+/* ═══════════════════════════
+   BREAKPOINT: large desktop
+═══════════════════════════ */
+@media (min-width: 1024px) {
+  .header { padding: 56px 20px 40px; }
+  .page { padding: 0 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Учебный инструмент</div>
+  <h1>Калькулятор себестоимости<br>процедуры</h1>
+  <p>Введите материалы и их стоимость — итог рассчитается автоматически</p>
+</div>
+
+<div class="page">
+  <div class="card">
+
+    <!-- ── DESKTOP VIEW ── -->
+    <div class="desktop-view">
+      <div class="table-wrap">
+        <table id="costTable">
+          <thead>
+            <tr>
+              <th style="width:48px; text-align:center">#</th>
+              <th>Наименование материала</th>
+              <th class="th-center" style="width:130px">Цена, ₽</th>
+              <th class="th-center" style="width:140px">Кол-во процедур</th>
+              <th class="th-right" style="width:160px">Себестоимость / 1 проц.</th>
+              <th style="width:44px"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6">
+                <button class="btn-add" onclick="addRow()">
+                  <svg width="15" height="15" fill="none" viewBox="0 0 15 15">
+                    <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M7.5 4.5v6M4.5 7.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  Добавить материал
+                </button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── MOBILE VIEW ── -->
+    <div class="mobile-list" id="mobileList"></div>
+    <div class="m-add-wrap" id="mAddWrap" style="display:none">
+      <button class="btn-add-mobile" onclick="addRow()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Добавить материал
+      </button>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="total-section">
+      <div class="total-label">Итого себестоимость одной процедуры</div>
+      <div class="total-right">
+        <span class="total-value" id="totalValue">0,00</span>
+        <span class="total-currency">₽</span>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <p class="hint">Цены и количество процедур можно менять — итог пересчитается мгновенно</p>
+</div><!-- /page -->
+
+<script>
+let rows = [];
+let nextId = 1;
+const MOBILE_BP = 639;
+
+function isMobile() { return window.innerWidth <= MOBILE_BP; }
+
+/* ── DATA ── */
+function addRow(name='', price='', qty='') {
+  const id = nextId++;
+  rows.push({ id, name, price, qty });
+  renderAll();
+  setTimeout(() => {
+    const el = document.getElementById('name_' + id);
+    if (el) el.focus();
+  }, 60);
+}
+
+function deleteRow(id) {
+  rows = rows.filter(r => r.id !== id);
+  renderAll();
+  recalc();
+}
+
+function onInput(id, field, value) {
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+  row[field] = value;
+  updateCost(id);
+  recalc();
+}
+
+function costFor(row) {
+  const p = parseFloat(row.price), q = parseFloat(row.qty);
+  return (p > 0 && q > 0) ? p / q : null;
+}
+
+function updateCost(id) {
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+  const v = costFor(row);
+  // desktop
+  const dc = document.getElementById('cost_' + id);
+  if (dc) {
+    if (v !== null) { dc.textContent = fmt(v) + ' ₽'; dc.classList.remove('empty'); }
+    else            { dc.textContent = '—'; dc.classList.add('empty'); }
+  }
+  // mobile
+  const mc = document.getElementById('mcost_' + id);
+  if (mc) {
+    if (v !== null) { mc.textContent = fmt(v) + ' ₽'; mc.classList.remove('empty'); }
+    else            { mc.textContent = '—'; mc.classList.add('empty'); }
+  }
+}
+
+function recalc() {
+  let total = 0;
+  rows.forEach(r => { const v = costFor(r); if (v) total += v; });
+  const el = document.getElementById('totalValue');
+  el.textContent = fmt(total);
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+}
+
+function fmt(n) {
+  return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── RENDER ── */
+function renderAll() {
+  renderDesktop();
+  renderMobile();
+  recalc();
+}
+
+function renderDesktop() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  if (rows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-msg';
+    tr.innerHTML = `<td colspan="6">Нажмите «Добавить материал», чтобы начать заполнение</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-num"><div class="row-num">${idx+1}</div></td>
+      <td><input id="name_${row.id}" class="inp inp-name" type="text"
+        placeholder="Название материала" value="${esc(row.name)}"
+        oninput="onInput(${row.id},'name',this.value)"></td>
+      <td><input id="price_${row.id}" class="inp inp-num" type="number"
+        placeholder="0.00" min="0" step="0.01" value="${esc(row.price)}"
+        oninput="onInput(${row.id},'price',this.value)"></td>
+      <td><input id="qty_${row.id}" class="inp inp-num" type="number"
+        placeholder="0" min="1" step="1" value="${esc(row.qty)}"
+        oninput="onInput(${row.id},'qty',this.value)"></td>
+      <td class="td-cost cost-val empty" id="cost_${row.id}">—</td>
+      <td class="td-del">
+        <button class="btn-del" onclick="deleteRow(${row.id})" title="Удалить">
+          <svg width="13" height="13" fill="none" viewBox="0 0 13 13">
+            <path d="M1.5 1.5l10 10M11.5 1.5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    updateCost(row.id);
+  });
+}
+
+function renderMobile() {
+  const list = document.getElementById('mobileList');
+  const addWrap = document.getElementById('mAddWrap');
+  list.innerHTML = '';
+
+  // Show mobile add button only in mobile view area
+  addWrap.style.display = 'block';
+
+  if (rows.length === 0) {
+    const el = document.createElement('div');
+    el.style.cssText = 'text-align:center;padding:28px 16px;color:#c4a99a;font-size:14px;font-weight:300;';
+    el.textContent = 'Нажмите кнопку ниже, чтобы начать заполнение';
+    list.appendChild(el);
+    return;
+  }
+
+  rows.forEach((row, idx) => {
+    const div = document.createElement('div');
+    div.className = 'm-card';
+    const v = costFor(row);
+    const costHtml = v !== null
+      ? `<span class="m-cost-value">${fmt(v)} ₽</span>`
+      : `<span class="m-cost-value empty">—</span>`;
+    div.innerHTML = `
+      <div class="m-card-head">
+        <span class="m-badge">Материал ${idx+1}</span>
+        <button class="btn-del" onclick="deleteRow(${row.id})" title="Удалить">
+          <svg width="13" height="13" fill="none" viewBox="0 0 13 13">
+            <path d="M1.5 1.5l10 10M11.5 1.5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="m-field full">
+        <label class="m-label" for="name_${row.id}">Наименование</label>
+        <input id="name_${row.id}" class="inp" type="text"
+          placeholder="Название материала" value="${esc(row.name)}"
+          oninput="onInput(${row.id},'name',this.value)">
+      </div>
+      <div class="m-fields">
+        <div class="m-field">
+          <label class="m-label" for="price_${row.id}">Цена, ₽</label>
+          <input id="price_${row.id}" class="inp inp-num" type="number"
+            placeholder="0.00" min="0" step="0.01" value="${esc(row.price)}"
+            oninput="onInput(${row.id},'price',this.value)">
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="qty_${row.id}">Кол-во процедур</label>
+          <input id="qty_${row.id}" class="inp inp-num" type="number"
+            placeholder="0" min="1" step="1" value="${esc(row.qty)}"
+            oninput="onInput(${row.id},'qty',this.value)">
+        </div>
+      </div>
+      <div class="m-cost-row">
+        <span class="m-cost-label">Себестоимость / 1 процедура</span>
+        <span id="mcost_${row.id}">${costHtml}</span>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+/* ── RESIZE ── */
+// On resize, re-render to keep IDs fresh in both views
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderAll, 120);
+});
+
+/* ── INIT ── */
+addRow(); addRow(); addRow();
+</script>
+</body>
+</html>

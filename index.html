@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Таблица расчёта</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --border: #252a35;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --text: #e8eaf0;
+    --muted: #5a6070;
+    --green: #00ff88;
+    --row-odd: #161920;
+    --row-even: #1a1e28;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(16px, 4vw, 48px) clamp(8px, 3vw, 24px);
+  }
+
+  h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(13px, 3vw, 22px);
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: clamp(16px, 3vw, 32px);
+    text-align: center;
+  }
+
+  .table-wrap {
+    width: 100%;
+    max-width: 860px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,229,255,0.06);
+  }
+
+  /* ── DESKTOP TABLE ── */
+  .desktop-table { display: block; }
+  .mobile-cards  { display: none; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: linear-gradient(90deg, #0a1a2a, #0d1f1a);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  th {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    padding: 14px 18px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th.num { text-align: right; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:nth-child(odd)  { background: var(--row-odd); }
+  tbody tr:nth-child(even) { background: var(--row-even); }
+  tbody tr:hover           { background: #1e2535; }
+  tbody tr:last-child      { border-bottom: none; }
+
+  td {
+    padding: 11px 18px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  td.num { text-align: right; }
+
+  .editable input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.2s, background 0.2s;
+    padding: 2px 4px;
+    text-align: inherit;
+    -moz-appearance: textfield;
+  }
+  .editable input::-webkit-outer-spin-button,
+  .editable input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .editable input:focus {
+    border-bottom-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+    border-radius: 4px 4px 0 0;
+    cursor: text;
+  }
+
+  .total-cell { color: var(--green); font-weight: 600; }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
+    display: block;
+    margin: 0 auto;
+  }
+  .del-btn:hover { color: #ff4444; background: rgba(255,68,68,0.1); }
+
+  /* ── MOBILE CARDS ── */
+  .card {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 14px 10px;
+    position: relative;
+  }
+  .card:last-child { border-bottom: none; }
+  .card:nth-child(odd)  { background: var(--row-odd); }
+  .card:nth-child(even) { background: var(--row-even); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .card-name input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    outline: none;
+    width: 100%;
+    padding: 2px 0;
+    transition: border-color 0.2s;
+  }
+  .card-name input:focus { border-bottom-color: var(--accent); }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .card-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-family: 'Unbounded', sans-serif;
+  }
+
+  .card-field input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    padding: 7px 8px;
+    width: 100%;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+    -moz-appearance: textfield;
+  }
+  .card-field input::-webkit-outer-spin-button,
+  .card-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .card-field input:focus {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.06);
+  }
+
+  .card-total-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green);
+    text-align: center;
+    padding: 7px 8px;
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 6px;
+  }
+
+  .card-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .card-del:hover { color: #ff4444; }
+
+  /* ── ADD BUTTON ── */
+  .add-row-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed var(--border);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    letter-spacing: 0.08em;
+  }
+  .add-row-btn:hover { color: var(--accent); background: rgba(0,229,255,0.04); }
+
+  /* ── SUMMARY ── */
+  .summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border-top: 2px solid var(--border);
+    background: #0f1218;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .summary-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    font-family: 'Unbounded', sans-serif;
+  }
+
+  .summary-value {
+    font-size: clamp(15px, 3vw, 20px);
+    font-weight: 700;
+    color: var(--green);
+  }
+  .summary-value.highlight { color: var(--accent2); }
+
+  /* ── DATE BAR ── */
+  .date-bar {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0 4px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* ── RESPONSIVE BREAKPOINT ── */
+  @media (max-width: 540px) {
+    .desktop-table { display: none; }
+    .mobile-cards  { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Таблица расчёта</h1>
+
+<div class="table-wrap">
+
+  <!-- DESKTOP -->
+  <div class="desktop-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Наименование</th>
+          <th class="num">Цена (₽)</th>
+          <th class="num">Количество</th>
+          <th class="num">Итого (₽)</th>
+          <th style="width:44px"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-desktop"></tbody>
+    </table>
+  </div>
+
+  <!-- MOBILE -->
+  <div class="mobile-cards" id="cards-mobile"></div>
+
+  <button class="add-row-btn" onclick="addRow()">＋ Добавить строку</button>
+
+  <div class="summary">
+    <div class="summary-item">
+      <span class="summary-label">Позиций</span>
+      <span class="summary-value" id="totalRows">0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Кол-во</span>
+      <span class="summary-value" id="totalQty">0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Итого</span>
+      <span class="summary-value highlight" id="grandTotal">0 ₽</span>
+    </div>
+  </div>
+</div>
+
+<div class="date-bar">
+  <span id="dateLabel"></span>
+  <span>Kate.pro· calc</span>
+</div>
+
+<script>
+const initialData = [
+  { name: 'Составы',  price: 230,  qty: 11 },
+  { name: 'Клей',     price: 1800, qty: 40 },
+  { name: 'Валики',   price: 700,  qty: 40 },
+  { name: 'Ботокс',   price: 700,  qty: 40 },
+  { name: 'Ботокс',   price: 0,    qty: 0  },
+];
+
+let rows = [];
+
+function calcTotal(price, qty) {
+  const p = parseFloat(price) || 0;
+  const q = parseFloat(qty)   || 0;
+  return p > 0 && q > 0 ? +(p * q / 1000).toFixed(2) : 0;
+}
+
+function fmt(n) { return n > 0 ? n.toLocaleString('ru-RU') : '—'; }
+
+/* ── DESKTOP ROW ── */
+function makeDesktopRow(row, i) {
+  const tr = document.createElement('tr');
+  const total = calcTotal(row.price, row.qty);
+  tr.innerHTML = `
+    <td class="editable">
+      <input type="text" value="${esc(row.name)}" placeholder="Наименование"
+        oninput="updateField(${i},'name',this.value)">
+    </td>
+    <td class="editable num">
+      <input type="number" value="${row.price||''}" placeholder="0" min="0"
+        oninput="updateField(${i},'price',this.value)">
+    </td>
+    <td class="editable num">
+      <input type="number" value="${row.qty||''}" placeholder="0" min="0"
+        oninput="updateField(${i},'qty',this.value)">
+    </td>
+    <td class="total-cell num" id="dt-${i}">${fmt(total)}</td>
+    <td><button class="del-btn" onclick="deleteRow(${i})">×</button></td>
+  `;
+  return tr;
+}
+
+/* ── MOBILE CARD ── */
+function makeMobileCard(row, i) {
+  const div = document.createElement('div');
+  div.className = 'card';
+  const total = calcTotal(row.price, row.qty);
+  div.innerHTML = `
+    <div class="card-header">
+      <div class="card-name" style="flex:1">
+        <input type="text" value="${esc(row.name)}" placeholder="Наименование"
+          oninput="updateField(${i},'name',this.value)">
+      </div>
+      <button class="card-del" onclick="deleteRow(${i})">×</button>
+    </div>
+    <div class="card-grid">
+      <div class="card-field">
+        <span class="card-label">Цена ₽</span>
+        <input type="number" inputmode="numeric" value="${row.price||''}" placeholder="0" min="0"
+          oninput="updateField(${i},'price',this.value)">
+      </div>
+      <div class="card-field">
+        <span class="card-label">Кол-во</span>
+        <input type="number" inputmode="numeric" value="${row.qty||''}" placeholder="0" min="0"
+          oninput="updateField(${i},'qty',this.value)">
+      </div>
+      <div class="card-field">
+        <span class="card-label">Итого</span>
+        <div class="card-total-value" id="mt-${i}">${fmt(total)}</div>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function esc(s) { return String(s).replace(/"/g,'&quot;'); }
+
+function render() {
+  const dTbody = document.getElementById('tbody-desktop');
+  const mCards = document.getElementById('cards-mobile');
+  dTbody.innerHTML = '';
+  mCards.innerHTML = '';
+  rows.forEach((row, i) => {
+    dTbody.appendChild(makeDesktopRow(row, i));
+    mCards.appendChild(makeMobileCard(row, i));
+  });
+  updateSummary();
+}
+
+function updateField(i, field, value) {
+  rows[i][field] = field === 'name' ? value : parseFloat(value) || 0;
+  const total = calcTotal(rows[i].price, rows[i].qty);
+  const dt = document.getElementById(`dt-${i}`);
+  const mt = document.getElementById(`mt-${i}`);
+  if (dt) dt.textContent = fmt(total);
+  if (mt) mt.textContent = fmt(total);
+  updateSummary();
+}
+
+function updateSummary() {
+  let qty = 0, total = 0;
+  rows.forEach(r => {
+    qty   += parseFloat(r.qty) || 0;
+    total += calcTotal(r.price, r.qty);
+  });
+  document.getElementById('totalRows').textContent = rows.length;
+  document.getElementById('totalQty').textContent  = qty.toLocaleString('ru-RU');
+  document.getElementById('grandTotal').textContent = total.toLocaleString('ru-RU',{minimumFractionDigits:2}) + ' ₽';
+}
+
+function addRow() {
+  rows.push({ name: '', price: 0, qty: 0 });
+  render();
+  setTimeout(() => {
+    // focus first input of last desktop row or mobile card
+    const isMobile = window.innerWidth <= 540;
+    const sel = isMobile
+      ? '#cards-mobile .card:last-child input'
+      : '#tbody-desktop tr:last-child input';
+    const inp = document.querySelector(sel);
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function deleteRow(i) {
+  rows.splice(i, 1);
+  render();
+}
+
+document.getElementById('dateLabel').textContent =
+  new Date().toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'});
+
+rows = initialData.map(r => ({...r}));
+render();
+</script>
+</body>
+</html>
